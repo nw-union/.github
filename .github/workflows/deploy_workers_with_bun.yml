@@ -1,0 +1,194 @@
+name: Deploy Workers With Bun
+on:
+  workflow_call:
+    inputs:
+      command:
+        type: string
+        default: deploy
+
+      envs:
+        type: string
+        required: false
+        default: '["production"]'
+        description: |
+          json 形式のデプロイする環境の配列 (e.g. '["production","development"]')
+
+      artifacts-upload-path:
+        type: string
+        required: false
+        default: build/
+
+      artifacts-download-path:
+        type: string
+        required: false
+        default: build/
+        description: |
+          成果物をダウンロードするパス.
+          upload-path が複数の時はその親ディレクトリを指定. $GITHUB_WORKSPACE など.
+
+    secrets:
+      CLOUDFLARE_ACCOUNT_ID:
+        required: true
+        description: |
+          Cloudflare のアカウントID.
+          Cloudflare ダッシュボード > Workers & Pages > Overview で,
+          右側のサイドバーから確認可能.
+
+      CLOUDFLARE_API_TOKEN:
+        required: true
+        description: |
+          Cloudflare の API トークン.
+          Cloudflare ダッシュボード > My Profile > API Tokens で作成.
+          必要な権限(多分):
+            - Account > Workers Scripts > Edit
+            - Account > Workers KV Storage > Edit (KV を使う場合)
+            - Zone > Workers Routes > Edit (カスタムドメインを使う場合)
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build
+        run: bun run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          include-hidden-files: true
+          path: ${{ inputs.artifacts-upload-path }}
+
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      matrix:
+        environment: ${{ fromJSON(inputs.envs) }}
+    outputs:
+      status: ${{ steps.output.outputs.deploy-status }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies # TODO: 無くしたい
+        run: bun install --frozen-lockfile
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: ${{ inputs.artifacts-download-path }}
+
+      - name: Deploy
+        id: deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: ${{ inputs.command }} --env ${{ matrix.environment }}
+
+      - name: Set output
+        id: output
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const deploymentData = {
+              environment: '${{ matrix.environment }}',
+              status: '${{ steps.deploy.outcome }}',
+              url: '${{ steps.deploy.outputs.deployment-url }}' || 'N/A'
+            };
+
+            core.setOutput('deploy-status', JSON.stringify(deploymentData));
+
+  result:
+    name: Result
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: always()
+    steps:
+      - name: Generate deployment message
+        id: message
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const results = ${{ toJSON(needs.deploy.outputs) }};
+
+            let message = '## 🚀 Deployment Results\n\n';
+            message += '| Environment | Status | URL |\n';
+            message += '| :---------- | :----- | :-- |\n';
+
+            // 各環境の結果を解析して message に追加
+            Object.values(results).forEach(result => {
+              const data = JSON.parse(result);
+              const statusEmoji = data.status === 'success' ? '✅' : '❌';
+              message += `| ${data.environment} | ${statusEmoji} ${data.status} | ${data.url} |\n`;
+            });
+
+            // Base64エンコードしてoutputに保存（改行を保持するため）
+            const messageBase64 = Buffer.from(message).toString('base64');
+            core.setOutput('message', messageBase64);
+
+      - name: Write Summary
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const messageBase64 = '${{ steps.message.outputs.message }}';
+            const message = Buffer.from(messageBase64, 'base64').toString('utf-8');
+
+            // GitHub Actions Summary に書き込む
+            await core.summary
+              .addRaw(message)
+              .write();
+
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request' # PR の場合はコメントを残す
+        with:
+          script: |
+            const messageBase64 = '${{ steps.message.outputs.message }}';
+            const message = Buffer.from(messageBase64, 'base64').toString('utf-8');
+
+            // PR用の情報とボットコメントの識別子を追加
+            const body = message +
+              `\n*Pusher: @${{ github.actor }}, Commit: ${{ github.event.pull_request.head.sha }}* \n` +
+              `\n<!-- deploy-workers-with-bun-results -->`;
+
+
+            // 既存のコメントを探す
+            const comments = await github.rest.issues.listComments({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+
+            const botComment = comments.data.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('<!-- deploy-workers-with-bun-results -->')
+            );
+
+            if (botComment) {
+              // 既存のコメントを更新
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              // 新規コメントを作成
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: body
+              });
+            }

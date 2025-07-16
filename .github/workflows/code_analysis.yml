@@ -1,0 +1,48 @@
+name: Code Analysis
+on:
+  workflow_call:
+
+jobs:
+
+  # biome を reviewdog で実行
+  # https://biomejs.dev/
+  # https://github.com/mongolyy/reviewdog-action-biome
+  biome:
+    name: Biome
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mongolyy/reviewdog-action-biome@v2.0.0
+        with:
+          github_token: ${{ secrets.github_token }}
+          reporter: github-pr-review
+          fail_level: error # エラーレベルがあれば失敗. エラー以外は成功でコメントを残す
+
+  # typos を reviewdog で実行
+  # https://github.com/crate-ci/typos
+  # https://github.com/reviewdog/action-typos
+  typos:
+    name: Typos
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: reviewdog/action-typos@v1.17.3
+        with:
+          github_token: ${{ secrets.github_token }}
+          reporter: github-pr-review
+          fail_level: error # エラーレベルがあれば失敗. エラー以外は成功でコメントを残す
+
+  # gitleak を reviewdog で実行
+  # https://github.com/gitleaks/gitleaks
+  # https://github.com/reviewdog/action-gitleaks
+  gitleaks:
+    name: Gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: reviewdog/action-gitleaks@v1.7.2
+        with:
+          github_token: ${{ secrets.github_token }}
+          reporter: github-pr-review
+          fail_level: error # エラーレベルがあれば失敗. エラー以外は成功でコメントを残す
+
