@@ -18,3 +18,17 @@ jobs:
           GH_REPO: ${{ github.repository }}
         if: ${{ toJSON(github.event.pull_request.assignees) == '[]' }}
 
+  add-copilot-reviewer:
+    name: Add Copilot as Reviewer
+    if: github.actor != 'dependabot[bot]' && (github.event.action == 'opened' || github.event.action == 'ready_for_review')
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+
+    steps:
+      - run: |
+          gh pr edit ${{ github.event.pull_request.number }} \
+            --add-reviewer copilot
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+
