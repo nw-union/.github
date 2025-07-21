@@ -1,6 +1,8 @@
 name: chores
 on:
   workflow_call:
+  pull_request:
+    types: [opened, ready_for_review]
 
 jobs:
   # PR 作成者を assignee に追加する
@@ -18,21 +20,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         if: ${{ toJSON(github.event.pull_request.assignees) == '[]' }}
-
-
-  # copilot を reviewer に追加する
-  # (2025/07 現在, 無料プランでは自動追加ができない)
-  add-copilot-reviewer:
-    name: Add Copilot as Reviewer
-    if: github.actor != 'dependabot[bot]' && (github.event.action == 'opened' || github.event.action == 'ready_for_review')
-    runs-on: ubuntu-latest
-    timeout-minutes: 1
-
-    steps:
-      - run: |
-          gh pr edit ${{ github.event.pull_request.number }} \
-            --add-reviewer copilot
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
 
