@@ -1,0 +1,38 @@
+name: claude
+on:
+  workflow_call:
+
+jobs:
+  claude-code-action-for-grandcolline:
+    if: |
+      (github.event_name == 'issue_comment' && github.event.comment.user.login == 'grandcolline' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && github.event.comment.user.login == 'grandcolline' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review' && github.event.review.user.login == 'grandcolline' && contains(github.event.review.body, '@claude')) ||
+      (github.event_name == 'issues' && github.event.issue.user.login == 'grandcolline' && contains(github.event.issue.body, '@claude'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude PR Action
+        uses: anthropics/claude-code-action@beta
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN_FOR_GRANDCOLLINE }}
+          timeout_minutes: "60"
+          # Optional: Restrict network access to specific domains only
+          # experimental_allowed_domains: |
+          #   .anthropic.com
+          #   .github.com
+          #   api.github.com
+          #   .githubusercontent.com
+          #   bun.sh
+          #   registry.npmjs.org
+          #   .blob.core.windows.net
+

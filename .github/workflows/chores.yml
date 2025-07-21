@@ -3,6 +3,7 @@ on:
   workflow_call:
 
 jobs:
+  # PR 作成者を assignee に追加する
   assign:
     name: Auto Assign
     if: github.actor != 'dependabot[bot]' && (github.event.action == 'opened' || github.event.action == 'ready_for_review')
@@ -18,6 +19,9 @@ jobs:
           GH_REPO: ${{ github.repository }}
         if: ${{ toJSON(github.event.pull_request.assignees) == '[]' }}
 
+
+  # copilot を reviewer に追加する
+  # (2025/07 現在, 無料プランでは自動追加ができない)
   add-copilot-reviewer:
     name: Add Copilot as Reviewer
     if: github.actor != 'dependabot[bot]' && (github.event.action == 'opened' || github.event.action == 'ready_for_review')
