@@ -18,7 +18,7 @@
 
 ## Pull Request Rules
 
-- PR を作成する際は, .github/pull_request_template.md のテンプレートに従うこと
+- PR を作成する際は、.github/pull_request_template.md のテンプレートに従うこと
 - すべてのセクションを適切に記入すること
 
 ## ディレクトリ構造
