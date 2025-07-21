@@ -1,6 +1,8 @@
 name: chores
 on:
   workflow_call:
+  pull_request:
+    types: [opened, ready_for_review]
 
 jobs:
   # PR 作成者を assignee に追加する
