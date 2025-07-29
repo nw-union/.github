@@ -1,0 +1,22 @@
+name: Chores
+on:
+  workflow_call:
+  issues:
+    types: [opened]
+
+jobs:
+  # Issue 作成者を assignee に追加する
+  assign:
+    name: Auto Assign
+    if: github.actor != 'dependabot[bot]' && github.event.action == 'opened'
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+
+    steps:
+      - run: |
+          gh issue edit ${{ github.event.issue.number }} \
+            --add-assignee ${{ github.event.issue.user.login }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        if: ${{ toJSON(github.event.issue.assignees) == '[]' }}
