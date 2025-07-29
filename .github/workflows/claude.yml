@@ -32,6 +32,8 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN_FOR_GRANDCOLLINE }}
           timeout_minutes: "60"
+          allowed_tools: |
+            Bash(bun:*)
           # Optional: Restrict network access to specific domains only
           # experimental_allowed_domains: |
           #   .anthropic.com
