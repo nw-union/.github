@@ -19,4 +19,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-        if: ${{ toJSON(github.event.issue.assignees) == '[]' }}
+        if: ${{ github.event.issue.assignees == null || length(github.event.issue.assignees) == 0 }}
