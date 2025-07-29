@@ -33,6 +33,8 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN_FOR_GRANDCOLLINE }}
           timeout_minutes: "60"
           allowed_tools: |
+            Bash(cat)
+            Bash(base64)
             Bash(bun:*)
             Bash(gh:*)
           # Optional: Restrict network access to specific domains only
