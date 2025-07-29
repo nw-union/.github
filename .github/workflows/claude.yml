@@ -34,6 +34,7 @@ jobs:
           timeout_minutes: "60"
           allowed_tools: |
             Bash(bun:*)
+            Bash(gh:*)
           # Optional: Restrict network access to specific domains only
           # experimental_allowed_domains: |
           #   .anthropic.com
