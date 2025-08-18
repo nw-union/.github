@@ -49,7 +49,7 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
 
       - name: Install dependencies
@@ -75,7 +75,7 @@ jobs:
     outputs:
       status: ${{ steps.output.outputs.deploy-status }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
 
       - name: Install dependencies # TODO: 無くしたい

@@ -11,7 +11,7 @@ jobs:
     name: Biome
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: mongolyy/reviewdog-action-biome@v2.0.0
         with:
           github_token: ${{ secrets.github_token }}
@@ -25,7 +25,7 @@ jobs:
     name: Typos
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: reviewdog/action-typos@v1.17.3
         with:
           github_token: ${{ secrets.github_token }}
@@ -39,7 +39,7 @@ jobs:
     name: Gitleaks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: reviewdog/action-gitleaks@v1.7.2
         with:
           github_token: ${{ secrets.github_token }}
