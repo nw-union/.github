@@ -73,7 +73,7 @@ jobs:
       matrix:
         environment: ${{ fromJSON(inputs.envs) }}
     outputs:
-      status: ${{ steps.output.outputs.deploy-status }}
+      ${{ matrix.environment }}: ${{ steps.output.outputs.deploy-status }}
     steps:
       - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
