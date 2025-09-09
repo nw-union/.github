@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: reviewdog/action-gitleaks@v1.7.2
+      - uses: reviewdog/action-gitleaks@v1.8.0
         with:
           github_token: ${{ secrets.github_token }}
           reporter: github-pr-review
