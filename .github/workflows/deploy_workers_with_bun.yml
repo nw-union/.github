@@ -72,8 +72,6 @@ jobs:
     strategy:
       matrix:
         environment: ${{ fromJSON(inputs.envs) }}
-    outputs:
-      status: ${{ steps.output.outputs.deploy-status }}
     steps:
       - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
@@ -95,19 +93,25 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           command: ${{ inputs.command }} --env ${{ matrix.environment }}
 
-      - name: Set output
-        id: output
+      - name: Save deployment result
         if: always()
         uses: actions/github-script@v8
         with:
           script: |
-            const deploymentData = {
+            const fs = require('fs');
+            const data = {
               environment: '${{ matrix.environment }}',
               status: '${{ steps.deploy.outcome }}',
               url: '${{ steps.deploy.outputs.deployment-url }}' || 'N/A'
             };
+            fs.writeFileSync('result.json', JSON.stringify(data));
 
-            core.setOutput('deploy-status', JSON.stringify(deploymentData));
+      - name: Upload deployment result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deploy-result-${{ matrix.environment }}
+          path: result.json
 
   result:
     name: Result
@@ -115,20 +119,30 @@ jobs:
     needs: deploy
     if: always()
     steps:
+      - name: Download deployment results
+        uses: actions/download-artifact@v5
+        with:
+          pattern: deploy-result-*
+          path: results
+
       - name: Generate deployment message
         id: message
         uses: actions/github-script@v8
         with:
           script: |
-            const results = ${{ toJSON(needs.deploy.outputs) }};
+            const fs = require('fs');
+            const path = require('path');
 
             let message = '## 🚀 Deployment Results\n\n';
             message += '| Environment | Status | URL |\n';
             message += '| :---------- | :----- | :-- |\n';
 
-            // 各環境の結果を解析して message に追加
-            Object.values(results).forEach(result => {
-              const data = JSON.parse(result);
+            const dir = 'results';
+            const files = fs.readdirSync(dir);
+
+            files.forEach(file => {
+              const filePath = path.join(dir, file, 'result.json');
+              const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
               const statusEmoji = data.status === 'success' ? '✅' : '❌';
               message += `| ${data.environment} | ${statusEmoji} ${data.status} | ${data.url} |\n`;
             });
