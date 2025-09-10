@@ -147,31 +147,22 @@ jobs:
               message += `| ${data.environment} | ${statusEmoji} ${data.status} | ${data.url} |\n`;
             });
 
-            // Base64エンコードしてoutputに保存（改行を保持するため）
-            const messageBase64 = Buffer.from(message).toString('base64');
-            core.setOutput('message', messageBase64);
+            // 環境変数としてメッセージをエクスポート
+            core.exportVariable('DEPLOY_MESSAGE', message);
 
       - name: Write Summary
         uses: actions/github-script@v8
         with:
           script: |
-            const messageBase64 = '${{ steps.message.outputs.message }}';
-            const message = Buffer.from(messageBase64, 'base64').toString('utf-8');
-
-            // GitHub Actions Summary に書き込む
-            await core.summary
-              .addRaw(message)
-              .write();
+            const message = process.env.DEPLOY_MESSAGE || '';
+            await core.summary.addRaw(message).write();
 
       - name: Comment on PR
         uses: actions/github-script@v8
         if: github.event_name == 'pull_request' # PR の場合はコメントを残す
         with:
           script: |
-            const messageBase64 = '${{ steps.message.outputs.message }}';
-            const message = Buffer.from(messageBase64, 'base64').toString('utf-8');
-
-            // PR用の情報とボットコメントの識別子を追加
+            const message = process.env.DEPLOY_MESSAGE || '';
             const body = message +
               `\n*Pusher: @${{ github.actor }}, Commit: ${{ github.event.pull_request.head.sha }}* \n` +
               `\n<!-- deploy-workers-with-bun-results -->`;
