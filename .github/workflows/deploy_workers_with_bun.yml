@@ -141,7 +141,18 @@ jobs:
             const files = fs.readdirSync(dir);
 
             files.forEach(file => {
-              const filePath = path.join(dir, file, 'result.json');
+              let filePath;
+              const fullPath = path.join(dir, file);
+              
+              // ファイルかディレクトリかを判定
+              if (fs.statSync(fullPath).isDirectory()) {
+                // 複数環境の場合：results/deploy-result-env/result.json
+                filePath = path.join(fullPath, 'result.json');
+              } else {
+                // 単一環境の場合：results/result.json
+                filePath = fullPath;
+              }
+              
               const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
               const statusEmoji = data.status === 'success' ? '✅' : '❌';
               message += `| ${data.environment} | ${statusEmoji} ${data.status} | ${data.url} |\n`;
