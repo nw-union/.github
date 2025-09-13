@@ -1,4 +1,4 @@
-name: Chores
+name: PR Chores
 on:
   workflow_call:
   pull_request:

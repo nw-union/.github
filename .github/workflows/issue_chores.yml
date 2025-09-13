@@ -1,4 +1,4 @@
-name: Chores
+name: Issue Chores
 on:
   workflow_call:
   issues:
