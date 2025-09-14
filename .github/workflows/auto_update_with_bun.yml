@@ -1,0 +1,80 @@
+name: Auto Update with Bun
+on:
+  workflow_call:
+    inputs:
+      commands:
+        type: string
+        required: false
+        default: '["fmt", "typegen", "db:generate"]'
+        description: |
+          JSON 形式の実行するコマンドの配列 (e.g. '["fmt","typegen"]')
+
+jobs:
+  auto-update:
+    name: Auto Update
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Run Commands
+        id: run-commands
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { execSync } = require('child_process');
+            const commands = JSON.parse('${{ inputs.commands }}');
+
+            console.log('📦 bun コマンドを実行中...');
+
+            // 各コマンドを実行
+            for (const cmd of commands) {
+              console.log(`\n🔧 実行中: bun run ${cmd}`);
+              try {
+                const output = execSync(`bun run ${cmd}`, {
+                  encoding: 'utf-8',
+                  stdio: 'pipe'
+                });
+                console.log(output);
+              } catch (error) {
+                console.error(`⚠️ コマンドが失敗しました: ${cmd}`);
+                console.error(error.message);
+                // エラーが発生しても他のコマンドは継続実行
+              }
+            }
+
+            // 変更を確認
+            const gitStatus = execSync('git status --porcelain', { encoding: 'utf-8' });
+            const hasChanges = gitStatus.trim().length > 0;
+
+            if (hasChanges) {
+              console.log('\n✅ 変更が検出されました');
+              core.setOutput('changes', 'true');
+            } else {
+              console.log('\n📭 変更はありません');
+              core.setOutput('changes', 'false');
+            }
+
+            return hasChanges;
+
+      - name: Commit and Push Changes
+        if: steps.run-commands.outputs.changes == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+          # すべての変更をステージング
+          git add -A
+
+          # コミットメッセージを作成
+          git commit -m "chore: auto-update from bun commands
+
+          Executed commands: ${{ inputs.commands }}
+
+          Co-authored-by: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>"
+
+          # 現在のブランチにプッシュ
+          git push origin HEAD
