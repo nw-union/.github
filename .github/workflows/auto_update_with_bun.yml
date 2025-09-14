@@ -71,14 +71,11 @@ jobs:
           # すべての変更をステージング
           git add -A
 
-          # コミットメッセージを作成
-          git commit -F - <<'EOF'
-chore: bunコマンドによる自動更新
-
-Commands: ${{ inputs.commands }}
-
-Co-authored-by: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
-EOF
+          # コミットメッセージを作成（ヒアドキュメントではなく -m を使用）
+          git commit \
+            -m "chore: bun コマンドによる自動更新" \
+            -m "" \
+            -m "Co-authored-by: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>"
 
           # 現在のブランチにプッシュ
           git push origin HEAD
