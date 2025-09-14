@@ -64,20 +64,4 @@ jobs:
 
             return hasChanges;
 
-      - name: Commit and Push Changes
-        if: steps.run-commands.outputs.changes == 'true'
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-
-          # すべての変更をステージング
-          git add -A
-
-          # コミットメッセージを作成
-          git commit \
-            -m "chore: bun コマンドによる自動更新" \
-            -m "" \
-            -m "Co-authored-by: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>"
-
-          # 現在のブランチにプッシュ
-          git push origin HEAD
+      - uses: stefanzweifel/git-auto-commit-action@v6
