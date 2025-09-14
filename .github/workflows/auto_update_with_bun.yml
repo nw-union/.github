@@ -72,11 +72,13 @@ jobs:
           git add -A
 
           # コミットメッセージを作成
-          git commit -m "chore: auto-update from bun commands
+          git commit -F - <<'EOF'
+chore: bunコマンドによる自動更新
 
-          Executed commands: ${{ inputs.commands }}
+Commands: ${{ inputs.commands }}
 
-          Co-authored-by: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>"
+Co-authored-by: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
+EOF
 
           # 現在のブランチにプッシュ
           git push origin HEAD
