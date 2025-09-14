@@ -78,4 +78,4 @@ jobs:
             -m "Co-authored-by: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>"
 
           # 現在のブランチにプッシュ
-          git push origin HEAD
+          git push origin HEAD:${{ github.ref }}
