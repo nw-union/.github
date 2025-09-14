@@ -80,4 +80,4 @@ jobs:
             -m "Co-authored-by: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>"
 
           # 現在のブランチにプッシュ
-          git push --set-upstream origin ${{ github.head_ref || github.ref_name }}
+          git push origin HEAD
