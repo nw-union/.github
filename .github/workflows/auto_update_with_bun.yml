@@ -17,6 +17,8 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.head_ref }}
       - uses: oven-sh/setup-bun@v2
 
       - name: Install dependencies
@@ -71,17 +73,11 @@ jobs:
           # すべての変更をステージング
           git add -A
 
-          # コミットメッセージを作成（ヒアドキュメントではなく -m を使用）
+          # コミットメッセージを作成
           git commit \
             -m "chore: bun コマンドによる自動更新" \
             -m "" \
             -m "Co-authored-by: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>"
 
-          # 現在のブランチにプッシュ（フル参照を使用）
-          REF_TO_PUSH="${GITHUB_REF}"
-          if [ -n "${GITHUB_HEAD_REF}" ]; then
-            # pull_request イベントではマージリファレンスではなくヘッドブランチにプッシュ
-            REF_TO_PUSH="refs/heads/${GITHUB_HEAD_REF}"
-          fi
-
-          git push origin HEAD:$REF_TO_PUSH
+          # 現在のブランチにプッシュ
+          git push --set-upstream origin ${{ github.head_ref }}
