@@ -73,9 +73,7 @@ jobs:
 
           # コミットメッセージを作成（ヒアドキュメントではなく -m を使用）
           git commit \
-            -m "chore: bunコマンドによる自動更新" \
-            -m "" \
-            -m "Commands: ${{ inputs.commands }}" \
+            -m "chore: bun コマンドによる自動更新" \
             -m "" \
             -m "Co-authored-by: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>"
 
