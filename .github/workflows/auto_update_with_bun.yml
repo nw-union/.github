@@ -15,6 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
@@ -37,7 +38,7 @@ jobs:
             execSync('git config --local user.name "github-actions[bot]"');
 
             // ブランチ名を生成
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').replace('T', '-').substring(0, 19);
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '').replace('T', '').substring(0, 19);
             const branchName = `auto-update/bun-${timestamp}`;
 
             // 新しいブランチを作成
