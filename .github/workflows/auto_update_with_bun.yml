@@ -17,8 +17,6 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v5
-        with:
-          ref: ${{ github.head_ref || github.ref_name }}
       - uses: oven-sh/setup-bun@v2
 
       - name: Install dependencies
@@ -34,7 +32,21 @@ jobs:
 
             console.log('📦 bun コマンドを実行中...');
 
-            // 各コマンドを実行
+            // Git設定
+            execSync('git config --local user.email "github-actions[bot]@users.noreply.github.com"');
+            execSync('git config --local user.name "github-actions[bot]"');
+
+            // ブランチ名を生成
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').replace('T', '-').substring(0, 19);
+            const branchName = `auto-update/bun-${timestamp}`;
+
+            // 新しいブランチを作成
+            execSync(`git checkout -b ${branchName}`);
+            console.log(`📝 ブランチ作成: ${branchName}`);
+
+            let totalChanges = false;
+
+            // 各コマンドを実行してコミット
             for (const cmd of commands) {
               console.log(`\n🔧 実行中: bun run ${cmd}`);
               try {
@@ -43,6 +55,22 @@ jobs:
                   stdio: 'pipe'
                 });
                 console.log(output);
+
+                // このコマンドによる変更を確認
+                const gitStatus = execSync('git status --porcelain', { encoding: 'utf-8' });
+                if (gitStatus.trim().length > 0) {
+                  // 変更をステージング
+                  execSync('git add -A');
+
+                  // コミット
+                  const commitMessage = `chore: bun run ${cmd} による自動更新\n\nCo-authored-by: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>`;
+                  execSync(`git commit -m "${commitMessage}"`);
+
+                  console.log(`✅ コミット作成: ${cmd} による変更`);
+                  totalChanges = true;
+                } else {
+                  console.log(`📭 ${cmd} による変更はありません`);
+                }
               } catch (error) {
                 console.error(`⚠️ コマンドが失敗しました: ${cmd}`);
                 console.error(error.message);
@@ -50,34 +78,45 @@ jobs:
               }
             }
 
-            // 変更を確認
-            const gitStatus = execSync('git status --porcelain', { encoding: 'utf-8' });
-            const hasChanges = gitStatus.trim().length > 0;
-
-            if (hasChanges) {
-              console.log('\n✅ 変更が検出されました');
+            if (totalChanges) {
+              console.log('\n✅ 合計で変更が検出されました');
               core.setOutput('changes', 'true');
+              core.setOutput('branch', branchName);
             } else {
               console.log('\n📭 変更はありません');
               core.setOutput('changes', 'false');
             }
 
-            return hasChanges;
+            return totalChanges;
 
-      - name: Commit and Push Changes
+      - name: Create Pull Request
         if: steps.run-commands.outputs.changes == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
+          # ブランチ名を取得
+          BRANCH_NAME="${{ steps.run-commands.outputs.branch }}"
 
-          # すべての変更をステージング
-          git add -A
+          # ブランチをプッシュ
+          git push origin "$BRANCH_NAME"
 
-          # コミットメッセージを作成
-          git commit \
-            -m "chore: bun コマンドによる自動更新" \
-            -m "" \
-            -m "Co-authored-by: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>"
+          # PRを作成
+          PR_URL=$(gh pr create \
+            --title "chore: bun コマンドによる自動更新" \
+            --body "## 概要
+          このPRは以下のコマンドによる自動更新を含んでいます:
+          - ${{ inputs.commands }}
 
-          # 現在のブランチにプッシュ
-          git push origin HEAD
+          ## 変更内容
+          各コマンドごとに個別のコミットが作成されています。
+
+          ---
+          *このPRはGitHub Actionsによって自動的に作成されました*
+
+          Co-authored-by: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>" \
+            --base "${{ github.head_ref || github.ref_name }}" \
+            --head "$BRANCH_NAME")
+
+          echo "✅ Pull Request が作成されました: $PR_URL"
+          echo "::error::自動更新による変更が検出されました。作成されたPRをレビューしてください: $PR_URL"
+          exit 1
