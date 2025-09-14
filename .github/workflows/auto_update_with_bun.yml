@@ -77,5 +77,10 @@ jobs:
             -m "" \
             -m "Co-authored-by: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>"
 
-          # 現在のブランチにプッシュ
-          git push origin HEAD
+          # 現在のブランチにプッシュ（フル参照を使用）
+          REF_TO_PUSH="${GITHUB_REF}"
+          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+            REF_TO_PUSH="refs/heads/${GITHUB_HEAD_REF}"
+          fi
+
+          git push origin HEAD:$REF_TO_PUSH
