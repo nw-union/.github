@@ -18,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.head_ref || github.ref_name }}
       - uses: oven-sh/setup-bun@v2
 
       - name: Install dependencies
@@ -80,4 +80,4 @@ jobs:
             -m "Co-authored-by: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>"
 
           # 現在のブランチにプッシュ
-          git push --set-upstream origin ${{ github.head_ref }}
+          git push --set-upstream origin ${{ github.head_ref || github.ref_name }}
