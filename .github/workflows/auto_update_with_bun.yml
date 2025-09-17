@@ -17,20 +17,21 @@ jobs:
       contents: write
       pull-requests: write
     steps:
-      - uses: actions/checkout@v5
-        with:
-          ref: ${{ github.head_ref || github.ref_name }}
-      - uses: oven-sh/setup-bun@v2
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
       - uses: actions/create-github-app-token@v2
         id: github-app-token
         with:
           app-id: ${{ secrets.NWU_BOT_APP_ID }}
           private-key: ${{ secrets.NWU_BOT_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }} # For creating a token for all repositories in the current owner's installation
+
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          token: ${{ steps.github-app-token.outputs.token }}
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
 
       - name: Run Commands
         id: run-commands
@@ -86,25 +87,14 @@ jobs:
               }
             }
 
-            // ループ外で残差分があれば最終コミット
-            try {
-              const residual = execSync('git status --porcelain', { encoding: 'utf-8' });
-              if (residual.trim().length > 0) {
-                console.log('\n🧹 残差分をコミットします');
-                execSync('git add -A');
-                execSync('git commit -m "chore: 自動更新の残差分をコミット"');
-                totalChanges = true;
-              }
-            } catch (e) {
-              console.error('残差分コミット処理でエラー:', e.message);
-            }
-
             // 変更があれば push（GitHub App トークンを使用）
             if (totalChanges) {
               console.log('\n✅ 合計で変更が検出されました');
-              const remoteUrl = `https://x-access-token:${token}@github.com/${repo}.git`;
+
               console.log(`🚀 push 実行: HEAD:${branchName}`);
+              const remoteUrl = `https://x-access-token:${token}@github.com/${repo}.git`;
               execSync(`git push "${remoteUrl}" "HEAD:${branchName}"`, { stdio: 'inherit' });
+
               core.setOutput('changes', 'true');
               core.setOutput('branch', branchName);
               core.setFailed('自動更新により差分が発生したため失敗として終了します');
