@@ -42,9 +42,7 @@ jobs:
         with:
           script: |
             const { execSync } = require('child_process');
-            const branchName = process.env.GITHUB_HEAD_REF || process.env.GITHUB_REF_NAME;
-            const repo = process.env.GITHUB_REPOSITORY;
-            const token = process.env.GH_TOKEN;
+            // const branchName = process.env.GITHUB_HEAD_REF || process.env.GITHUB_REF_NAME;
             const commands = JSON.parse('${{ inputs.commands }}');
 
             console.log('📦 bun コマンドを実行中...');
@@ -68,10 +66,8 @@ jobs:
                 // このコマンドによる変更を確認
                 const gitStatus = execSync('git status --porcelain', { encoding: 'utf-8' });
                 if (gitStatus.trim().length > 0) {
-                  // 変更をステージング
-                  execSync('git add -A');
-
                   // コミット
+                  execSync('git add -A');
                   const commitMessage = `chore: bun run ${cmd} による自動更新\n\nCo-authored-by: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>`;
                   execSync(`git commit -m "${commitMessage}"`);
 
@@ -91,16 +87,12 @@ jobs:
             if (totalChanges) {
               console.log('\n✅ 合計で変更が検出されました');
 
-              console.log(`🚀 push 実行: HEAD:${branchName}`);
-              const remoteUrl = `https://x-access-token:${token}@github.com/${repo}.git`;
-              execSync(`git push "${remoteUrl}" "HEAD:${branchName}"`, { stdio: 'inherit' });
+              // push
+              // console.log(`🚀 push 実行: HEAD:${branchName}`);
+              // execSync(`git push origin "HEAD:${branchName}"`, { stdio: 'inherit' });
+              execSync(`git push origin`, { stdio: 'inherit' });
 
-              core.setOutput('changes', 'true');
-              core.setOutput('branch', branchName);
               core.setFailed('自動更新により差分が発生したため失敗として終了します');
             } else {
               console.log('\n📭 変更はありません');
-              core.setOutput('changes', 'false');
             }
-
-            return totalChanges;
