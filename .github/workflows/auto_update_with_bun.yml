@@ -88,9 +88,7 @@ jobs:
                   console.log(`📭 ${cmd} による変更はありません`);
                 }
               } catch (error) {
-                console.error(`⚠️ コマンドが失敗しました: ${cmd}`);
-                console.error(error.message);
-                // エラーが発生しても他のコマンドは継続実行
+                core.setFailed(`⚠️ コマンドが失敗しました: ${cmd}. error: ${error.message}`);
               }
             }
 
