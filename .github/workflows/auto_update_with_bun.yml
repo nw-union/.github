@@ -92,32 +92,56 @@ jobs:
 
       - name: Create Pull Request
         if: steps.run-commands.outputs.changes == 'true'
+        uses: actions/github-script@v8
         env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          # ブランチ名を取得
-          BRANCH_NAME="${{ steps.run-commands.outputs.branch }}"
+          BASE_REF: ${{ github.head_ref || github.ref_name }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const { execSync } = require('node:child_process');
 
-          # ブランチをプッシュ
-          git push origin "$BRANCH_NAME"
+            const branchName = `${{ steps.run-commands.outputs.branch }}`;
+            const baseRef = process.env.BASE_REF;
 
-          # PRを作成
-          PR_URL=$(gh pr create \
-            --title "chore: bun コマンドによる自動更新" \
-            --body "## 概要
-          このPRは以下のコマンドによる自動更新を含んでいます:
-          - ${{ inputs.commands }}
+            // ブランチをプッシュ
+            try {
+              execSync(`git push origin "${branchName}"`, { stdio: 'inherit' });
+            } catch (e) {
+              core.setFailed(`ブランチの push に失敗しました: ${e.message}`);
+              return;
+            }
 
-          ## 変更内容
-          各コマンドごとに個別のコミットが作成されています。
+            // PR を作成
+            const title = `chore: 自動更新`;
+            const body = `このPRはGitHub Actionsによって自動的に作成されました\n\nCo-authored-by: ${context.actor} <${context.actor}@users.noreply.github.com>`;
 
-          ---
-          *このPRはGitHub Actionsによって自動的に作成されました*
+            const { owner, repo } = context.repo;
+            const { data: pr } = await github.rest.pulls.create({
+              owner,
+              repo,
+              title,
+              head: branchName,
+              base: baseRef,
+              body,
+            });
 
-          Co-authored-by: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>" \
-            --base "${{ github.head_ref || github.ref_name }}" \
-            --head "$BRANCH_NAME")
+            core.info(`✅ Pull Request が作成されました: ${pr.html_url}`);
+            core.error(`自動更新による変更が検出されました。作成されたPRをレビューしてください: ${pr.html_url}`);
+            core.setFailed('自動更新により変更が発生しました');
 
-          echo "✅ Pull Request が作成されました: $PR_URL"
-          echo "::error::自動更新による変更が検出されました。作成されたPRをレビューしてください: $PR_URL"
-          exit 1
+      - name: Comment on PR (pull_request event)
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.pull_request.number;
+            const body = `自動更新による変更が検出されました。作成されたPRをレビューしてください: ${context.payload.pull_request.html_url}`;
+
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number,
+              body,
+            });
