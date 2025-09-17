@@ -18,32 +18,39 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
       - uses: oven-sh/setup-bun@v2
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - uses: actions/create-github-app-token@v2
+        id: github-app-token
+        with:
+          app-id: ${{ secrets.NWU_BOT_APP_ID }}
+          private-key: ${{ secrets.NWU_BOT_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }} # For creating a token for all repositories in the current owner's installation
+
       - name: Run Commands
         id: run-commands
         uses: actions/github-script@v8
+        env:
+          # デフォルトの github.token ではワークフローをトリガーできないため GitHub App Token を使用する
+          GH_TOKEN: ${{ steps.github-app-token.outputs.token }}
         with:
           script: |
             const { execSync } = require('child_process');
+            const branchName = process.env.GITHUB_HEAD_REF || process.env.GITHUB_REF_NAME;
+            const repo = process.env.GITHUB_REPOSITORY;
+            const token = process.env.GH_TOKEN;
             const commands = JSON.parse('${{ inputs.commands }}');
 
             console.log('📦 bun コマンドを実行中...');
 
             // Git設定
-            execSync('git config --local user.email "github-actions[bot]@users.noreply.github.com"');
+            execSync('git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"');
             execSync('git config --local user.name "github-actions[bot]"');
-
-            // ブランチ名を生成
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '').replace('T', '').substring(0, 19);
-            const branchName = `auto-update/bun-${timestamp}`;
-
-            // 新しいブランチを作成
-            execSync(`git checkout -b ${branchName}`);
-            console.log(`📝 ブランチ作成: ${branchName}`);
 
             let totalChanges = false;
 
@@ -79,69 +86,31 @@ jobs:
               }
             }
 
+            // ループ外で残差分があれば最終コミット
+            try {
+              const residual = execSync('git status --porcelain', { encoding: 'utf-8' });
+              if (residual.trim().length > 0) {
+                console.log('\n🧹 残差分をコミットします');
+                execSync('git add -A');
+                execSync('git commit -m "chore: 自動更新の残差分をコミット"');
+                totalChanges = true;
+              }
+            } catch (e) {
+              console.error('残差分コミット処理でエラー:', e.message);
+            }
+
+            // 変更があれば push（GitHub App トークンを使用）
             if (totalChanges) {
               console.log('\n✅ 合計で変更が検出されました');
+              const remoteUrl = `https://x-access-token:${token}@github.com/${repo}.git`;
+              console.log(`🚀 push 実行: HEAD:${branchName}`);
+              execSync(`git push "${remoteUrl}" "HEAD:${branchName}"`, { stdio: 'inherit' });
               core.setOutput('changes', 'true');
               core.setOutput('branch', branchName);
+              core.setFailed('自動更新により差分が発生したため失敗として終了します');
             } else {
               console.log('\n📭 変更はありません');
               core.setOutput('changes', 'false');
             }
 
             return totalChanges;
-
-      - name: Create Pull Request
-        if: steps.run-commands.outputs.changes == 'true'
-        uses: actions/github-script@v8
-        env:
-          BASE_REF: ${{ github.head_ref || github.ref_name }}
-        with:
-          github-token: ${{ github.token }}
-          script: |
-            const { execSync } = require('node:child_process');
-
-            const branchName = `${{ steps.run-commands.outputs.branch }}`;
-            const baseRef = process.env.BASE_REF;
-
-            // ブランチをプッシュ
-            try {
-              execSync(`git push origin "${branchName}"`, { stdio: 'inherit' });
-            } catch (e) {
-              core.setFailed(`ブランチの push に失敗しました: ${e.message}`);
-              return;
-            }
-
-            // PR を作成
-            const title = `chore: 自動更新`;
-            const body = `このPRはGitHub Actionsによって自動的に作成されました\n\nCo-authored-by: ${context.actor} <${context.actor}@users.noreply.github.com>`;
-
-            const { owner, repo } = context.repo;
-            const { data: pr } = await github.rest.pulls.create({
-              owner,
-              repo,
-              title,
-              head: branchName,
-              base: baseRef,
-              body,
-            });
-
-            core.info(`✅ Pull Request が作成されました: ${pr.html_url}`);
-            core.error(`自動更新による変更が検出されました。作成されたPRをレビューしてください: ${pr.html_url}`);
-            core.setFailed('自動更新により変更が発生しました');
-
-      - name: Comment on PR (pull_request event)
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v8
-        with:
-          github-token: ${{ github.token }}
-          script: |
-            const { owner, repo } = context.repo;
-            const issue_number = context.payload.pull_request.number;
-            const body = `自動更新による変更が検出されました。作成されたPRをレビューしてください: ${context.payload.pull_request.html_url}`;
-
-            await github.rest.issues.createComment({
-              owner,
-              repo,
-              issue_number,
-              body,
-            });
