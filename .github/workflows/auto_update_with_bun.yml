@@ -26,7 +26,7 @@ jobs:
 
       - name: Run Commands
         id: run-commands
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const { execSync } = require('child_process');
