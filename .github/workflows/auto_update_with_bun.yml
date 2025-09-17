@@ -17,7 +17,6 @@ on:
           NWU bot を使用する場合は下記から確認
           https://github.com/organizations/nw-union/settings/apps/nwu-bot
 
-
       GH_APPS_PRIVATE_KEY:
         required: true
         description: |
@@ -78,8 +77,10 @@ jobs:
                 if (gitStatus.trim().length > 0) {
                   // コミット
                   execSync('git add -A');
-                  const commitMessage = `chore: bun run ${cmd} による自動更新\n\nCo-authored-by: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>`;
-                  execSync(`git commit -m "${commitMessage}"`);
+                  // コマンドインジェクション対策: cmdをエスケープ
+                  const escapedCmd = cmd.replace(/'/g, "'\\''");
+                  const commitMessage = `chore: bun run ${escapedCmd} による自動更新\n\nCo-authored-by: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>`;
+                  execSync(`git commit -m '${commitMessage}'`);
 
                   console.log(`✅ コミット作成: ${cmd} による変更`);
                   totalChanges = true;
@@ -97,7 +98,7 @@ jobs:
             if (totalChanges) {
               // push
               console.log('\n✅ 変更が検出されたので push をします');
-              execSync(`git push origin`, { stdio: 'inherit' });
+              execSync(`git push origin HEAD`, { stdio: 'inherit' });
 
               core.setFailed('自動更新により差分が発生したため失敗として終了します');
             } else {
