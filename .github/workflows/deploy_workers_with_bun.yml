@@ -80,7 +80,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Download build artifacts
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v6.0.0
         with:
           name: build-artifacts
           path: ${{ inputs.artifacts-download-path }}
