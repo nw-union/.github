@@ -38,7 +38,7 @@ jobs:
           private-key: ${{ secrets.GH_APPS_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }} # For creating a token for all repositories in the current owner's installation
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.head_ref || github.ref_name }}
           token: ${{ steps.github-app-token.outputs.token }}
