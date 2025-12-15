@@ -59,7 +59,7 @@ jobs:
         run: bun run build
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v5.0.0
+        uses: actions/upload-artifact@v6.0.0
         with:
           name: build-artifacts
           include-hidden-files: true
@@ -108,7 +108,7 @@ jobs:
 
       - name: Upload deployment result
         if: always()
-        uses: actions/upload-artifact@v5.0.0
+        uses: actions/upload-artifact@v6.0.0
         with:
           name: deploy-result-${{ matrix.environment }}
           path: result.json
