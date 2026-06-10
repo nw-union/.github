@@ -11,8 +11,8 @@ jobs:
     name: Biome
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: mongolyy/reviewdog-action-biome@v2.11.1
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: mongolyy/reviewdog-action-biome@58f27dce74f1f648943d3a88de554385727ce11b # v2.11.1
         with:
           github_token: ${{ secrets.github_token }}
           reporter: github-pr-review
@@ -25,8 +25,8 @@ jobs:
     name: Typos
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: reviewdog/action-typos@v1.19.0
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: reviewdog/action-typos@d5eb1bbcd1b3bfde596f6eeb470322727862fe98 # v1.19.0
         with:
           github_token: ${{ secrets.github_token }}
           reporter: github-pr-review
@@ -39,8 +39,8 @@ jobs:
     name: Gitleaks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: reviewdog/action-gitleaks@v1.8.0
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: reviewdog/action-gitleaks@2b7b5685e3e3eecddab5d30cfa04f18123031421 # v1.8.0
         with:
           github_token: ${{ secrets.github_token }}
           reporter: github-pr-review
