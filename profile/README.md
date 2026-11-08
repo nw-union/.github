@@ -2,7 +2,7 @@
   
 ### Hey, Wanna Hang out...?🤪
   
-[web](https://nw-union.net)　/ [discord](https://nw-union.net/discord)　/ [YouTube](https://www.youtube.com/@nw-union)
+[Web](https://nw-union.net)　/ [Discord](https://nw-union.net/discord)　/ [YouTube](https://www.youtube.com/@nw-union)
 
 </samp>
 
