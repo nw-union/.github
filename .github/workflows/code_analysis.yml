@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: reviewdog/action-typos@d5eb1bbcd1b3bfde596f6eeb470322727862fe98 # v1.19.0
+      - uses: reviewdog/action-typos@5c47488c7d57273738b3fff7daea2a1f5736a903 # v1.20.0
         with:
           github_token: ${{ secrets.github_token }}
           reporter: github-pr-review
